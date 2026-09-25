@@ -1,18 +1,59 @@
 import { useState } from "react";
 import "./App.css";
 
+const API_URL = "http://127.0.0.1:8000";
+
 function App() {
   const [message, setMessage] = useState("");
+  const [response, setResponse] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!message.trim()) {
+    const userMessage = message.trim();
+
+    if (!userMessage || loading) {
       return;
     }
 
-    console.log("User message:", message);
-    setMessage("");
+    setLoading(true);
+    setResponse("");
+    setError("");
+
+    try {
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to get a response from the server.");
+      }
+
+      const data = await res.json();
+
+      setResponse(data.response);
+      setMessage("");
+    } catch (err) {
+      setError(
+        err.message || "Something went wrong. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExampleClick = (example) => {
+    setMessage(example);
+    setResponse("");
+    setError("");
   };
 
   return (
@@ -36,10 +77,28 @@ function App() {
             onChange={(event) => setMessage(event.target.value)}
             placeholder="Ask anything..."
             rows="4"
+            disabled={loading}
           />
 
-          <button type="submit">Send</button>
+          <button type="submit" disabled={loading || !message.trim()}>
+            {loading ? "Researching..." : "Send"}
+          </button>
         </form>
+
+        {error && (
+          <section className="error-message">
+            <strong>Error:</strong> {error}
+          </section>
+        )}
+
+        {response && (
+          <section className="response-section">
+            <h3>Research Assistant</h3>
+            <div className="response-box">
+              {response}
+            </div>
+          </section>
+        )}
 
         <section className="examples">
           <h3>Try an example</h3>
@@ -48,7 +107,7 @@ function App() {
             <button
               type="button"
               onClick={() =>
-                setMessage("Research the latest AI trends")
+                handleExampleClick("Research the latest AI trends")
               }
             >
               Research the latest AI trends
@@ -57,7 +116,7 @@ function App() {
             <button
               type="button"
               onClick={() =>
-                setMessage("Calculate GST on ₹50,000 at 18%")
+                handleExampleClick("Calculate GST on ₹50,000 at 18%")
               }
             >
               Calculate GST on ₹50,000 at 18%
@@ -66,7 +125,7 @@ function App() {
             <button
               type="button"
               onClick={() =>
-                setMessage("Find information about Python")
+                handleExampleClick("Find information about Python")
               }
             >
               Find information about Python
