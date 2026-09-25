@@ -23,7 +23,7 @@ function App() {
     setError("");
 
     try {
-      const res = await fetch(`${API_URL}/chat`, {
+      const res = await fetch(`${API_URL}/chat/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -34,12 +34,64 @@ function App() {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to get a response from the server.");
+        throw new Error("Failed to connect to the server.");
       }
 
-      const data = await res.json();
+      if (!res.body) {
+        throw new Error("Streaming is not supported by the server.");
+      }
 
-      setResponse(data.response);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const events = buffer.split("\n\n");
+
+        buffer = events.pop() || "";
+
+        for (const eventData of events) {
+          const line = eventData
+            .split("\n")
+            .find((line) => line.startsWith("data: "));
+
+          if (!line) {
+            continue;
+          }
+
+          const data = line.slice(6);
+
+          try {
+            const parsedData = JSON.parse(data);
+
+            if (parsedData.type === "token") {
+              setResponse(
+                (previous) => previous + parsedData.content
+              );
+            } else if (parsedData.type === "error") {
+              throw new Error(parsedData.message);
+            } else if (parsedData.type === "done") {
+              return;
+            }
+          } catch (parseError) {
+            if (parseError instanceof SyntaxError) {
+              console.error("Invalid SSE data:", data);
+            } else {
+              throw parseError;
+            }
+          }
+        }
+      }
+
       setMessage("");
     } catch (err) {
       setError(
@@ -80,7 +132,10 @@ function App() {
             disabled={loading}
           />
 
-          <button type="submit" disabled={loading || !message.trim()}>
+          <button
+            type="submit"
+            disabled={loading || !message.trim()}
+          >
             {loading ? "Researching..." : "Send"}
           </button>
         </form>
@@ -94,6 +149,7 @@ function App() {
         {response && (
           <section className="response-section">
             <h3>Research Assistant</h3>
+
             <div className="response-box">
               {response}
             </div>
