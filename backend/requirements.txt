@@ -4,3 +4,9 @@ langchain
 langchain-ollama
 ddgs
 python-dotenv
+sqlalchemy
+psycopg[binary]
+alembic
+pwdlib[argon2]
+PyJWT
+python-multipart
