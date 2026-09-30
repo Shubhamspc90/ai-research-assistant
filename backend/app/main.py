@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 
 from backend.app.agents import research_agent
 from backend.app.schemas.chat import ChatRequest, ChatResponse
+from backend.app.routes.auth import router as auth_router
 
 
 app = FastAPI(
@@ -26,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(auth_router)
 
 
 # --------------------------------------------------
