@@ -1,12 +1,14 @@
 import json
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from backend.app.agents import research_agent
-from backend.app.schemas.chat import ChatRequest, ChatResponse
+from backend.app.auth.dependencies import get_current_user
+from backend.app.models import User
 from backend.app.routes.auth import router as auth_router
+from backend.app.schemas.chat import ChatRequest, ChatResponse
 
 
 app = FastAPI(
@@ -59,7 +61,10 @@ def health_check():
 # --------------------------------------------------
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest):
+def chat(
+    request: ChatRequest,
+    current_user: User = Depends(get_current_user),
+):
     result = research_agent.invoke(
         {
             "messages": [
@@ -81,8 +86,10 @@ def chat(request: ChatRequest):
 # --------------------------------------------------
 
 @app.post("/chat/stream")
-async def chat_stream(request: ChatRequest):
-
+async def chat_stream(
+    request: ChatRequest,
+    current_user: User = Depends(get_current_user),
+):
     async def generate():
         try:
             async for message_chunk, metadata in research_agent.astream(
@@ -96,7 +103,6 @@ async def chat_stream(request: ChatRequest):
                 },
                 stream_mode="messages",
             ):
-                # Get text from the streamed message chunk
                 text = message_chunk.text
 
                 if text:
@@ -107,7 +113,6 @@ async def chat_stream(request: ChatRequest):
 
                     yield f"data: {json.dumps(data)}\n\n"
 
-            # Tell frontend that streaming is complete
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
         except Exception as exc:
