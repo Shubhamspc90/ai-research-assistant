@@ -1,0 +1,110 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from backend.app.agents import research_agent
+from backend.app.auth.dependencies import get_current_user
+from backend.app.database.dependencies import get_db
+from backend.app.models import Conversation, Message, User
+from backend.app.schemas.chat import ChatRequest
+from backend.app.schemas.message import MessageResponse
+
+
+router = APIRouter(
+    prefix="/conversations",
+    tags=["Messages"],
+)
+
+
+@router.post(
+    "/{conversation_id}/messages",
+    response_model=list[MessageResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+def create_message(
+    conversation_id: int,
+    request: ChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # --------------------------------------------------
+    # Verify conversation ownership
+    # --------------------------------------------------
+
+    conversation = db.scalar(
+        select(Conversation).where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id,
+        )
+    )
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    # --------------------------------------------------
+    # Save user message
+    # --------------------------------------------------
+
+    user_message = Message(
+        conversation_id=conversation.id,
+        role="user",
+        content=request.message,
+    )
+
+    db.add(user_message)
+    db.flush()
+
+    # --------------------------------------------------
+    # Run AI research agent
+    # --------------------------------------------------
+
+    try:
+        result = research_agent.invoke(
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": request.message,
+                    }
+                ]
+            }
+        )
+
+        assistant_response = result["messages"][-1].content
+
+    except Exception:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service is temporarily unavailable. Please try again later.",
+        )
+
+    # --------------------------------------------------
+    # Save assistant message
+    # --------------------------------------------------
+
+    assistant_message = Message(
+        conversation_id=conversation.id,
+        role="assistant",
+        content=assistant_response,
+    )
+
+    db.add(assistant_message)
+
+    # --------------------------------------------------
+    # Commit conversation messages
+    # --------------------------------------------------
+
+    db.commit()
+
+    db.refresh(user_message)
+    db.refresh(assistant_message)
+
+    return [
+        user_message,
+        assistant_message,
+    ]
