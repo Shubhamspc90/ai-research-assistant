@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from backend.app.auth.dependencies import get_current_user
 from backend.app.database.dependencies import get_db
 from backend.app.models import Conversation, User
 from backend.app.schemas.conversation import (
     ConversationCreate,
+    ConversationDetailResponse,
     ConversationResponse,
 )
+
 
 router = APIRouter(
     prefix="/conversations",
@@ -53,3 +55,30 @@ def list_conversations(
     ).all()
 
     return list(conversations)
+
+
+@router.get(
+    "/{conversation_id}",
+    response_model=ConversationDetailResponse,
+)
+def get_conversation(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    conversation = db.scalar(
+        select(Conversation)
+        .options(selectinload(Conversation.messages))
+        .where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id,
+        )
+    )
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    return conversation
