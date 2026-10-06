@@ -108,3 +108,48 @@ def create_message(
         user_message,
         assistant_message,
     ]
+
+
+# ==================================================
+# Conversation Message History
+# ==================================================
+
+@router.get(
+    "/{conversation_id}/messages",
+    response_model=list[MessageResponse],
+)
+def list_messages(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # --------------------------------------------------
+    # Verify conversation ownership
+    # --------------------------------------------------
+
+    conversation = db.scalar(
+        select(Conversation).where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id,
+        )
+    )
+
+    if conversation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found.",
+        )
+
+    # --------------------------------------------------
+    # Load conversation messages
+    # --------------------------------------------------
+
+    messages = db.scalars(
+        select(Message)
+        .where(
+            Message.conversation_id == conversation_id
+        )
+        .order_by(Message.created_at.asc())
+    ).all()
+
+    return list(messages)

@@ -9,6 +9,7 @@ from backend.app.auth.dependencies import get_current_user
 from backend.app.models import User
 from backend.app.routes.auth import router as auth_router
 from backend.app.routes.conversations import router as conversations_router
+from backend.app.routes.messages import router as messages_router
 from backend.app.schemas.chat import ChatRequest, ChatResponse
 
 
@@ -20,6 +21,7 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(conversations_router)
+app.include_router(messages_router)
 
 # --------------------------------------------------
 # CORS Configuration
