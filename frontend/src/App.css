@@ -143,3 +143,204 @@
 .example-list button:hover {
   border-color: #2563eb;
 }
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.chat-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+  background: #111827;
+  color: white;
+}
+
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.new-chat-button {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: #1f2937;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.new-chat-button:hover {
+  background: #374151;
+}
+
+.conversation-list h3 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.conversation-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 5px;
+  margin-bottom: 8px;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.conversation-item:hover {
+  background: #1f2937;
+}
+
+.conversation-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.conversation-date {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.sidebar-status {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.sidebar-error {
+  color: #fca5a5;
+  font-size: 14px;
+}
+
+.chat-main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .chat-sidebar {
+    width: 220px;
+  }
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: #f5f7fb;
+}
+
+.login-form {
+  width: min(400px, 100%);
+  padding: 32px;
+  box-sizing: border-box;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.login-form h1 {
+  margin: 0;
+  text-align: center;
+  font-size: 26px;
+}
+
+.login-form p {
+  margin: 8px 0 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-form input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.login-form input:focus {
+  outline: 2px solid #2563eb;
+  border-color: transparent;
+}
+
+.login-form button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.login-form button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.login-form button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.login-error {
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.logout-button {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: transparent;
+  color: #d1d5db;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #374151;
+  color: white;
+}
