@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -27,10 +29,9 @@ def create_message(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # --------------------------------------------------
-    # Verify conversation ownership
-    # --------------------------------------------------
+    """Create a user message, generate an AI response, and save both messages."""
 
+    # Verify conversation ownership.
     conversation = db.scalar(
         select(Conversation).where(
             Conversation.id == conversation_id,
@@ -44,10 +45,7 @@ def create_message(
             detail="Conversation not found.",
         )
 
-    # --------------------------------------------------
-    # Save user message
-    # --------------------------------------------------
-
+    # Save the user's message.
     user_message = Message(
         conversation_id=conversation.id,
         role="user",
@@ -57,19 +55,27 @@ def create_message(
     db.add(user_message)
     db.flush()
 
-    # --------------------------------------------------
-    # Run AI research agent
-    # --------------------------------------------------
+    # Load previous conversation messages.
+    messages = db.scalars(
+        select(Message)
+        .where(Message.conversation_id == conversation.id)
+        .order_by(Message.created_at.asc())
+    ).all()
 
+    # Convert database messages into the format expected by the agent.
+    conversation_messages = [
+        {
+            "role": message.role,
+            "content": message.content,
+        }
+        for message in messages
+    ]
+
+    # Generate the AI response using the complete conversation history.
     try:
         result = research_agent.invoke(
             {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": request.message,
-                    }
-                ]
+                "messages": conversation_messages,
             }
         )
 
@@ -80,13 +86,13 @@ def create_message(
 
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI service is temporarily unavailable. Please try again later.",
+            detail=(
+                "AI service is temporarily unavailable. "
+                "Please try again later."
+            ),
         )
 
-    # --------------------------------------------------
-    # Save assistant message
-    # --------------------------------------------------
-
+    # Save the assistant's response.
     assistant_message = Message(
         conversation_id=conversation.id,
         role="assistant",
@@ -95,10 +101,10 @@ def create_message(
 
     db.add(assistant_message)
 
-    # --------------------------------------------------
-    # Commit conversation messages
-    # --------------------------------------------------
+    # Update the conversation's last activity timestamp.
+    conversation.updated_at = datetime.utcnow()
 
+    # Commit both messages and the conversation update.
     db.commit()
 
     db.refresh(user_message)
@@ -110,10 +116,6 @@ def create_message(
     ]
 
 
-# ==================================================
-# Conversation Message History
-# ==================================================
-
 @router.get(
     "/{conversation_id}/messages",
     response_model=list[MessageResponse],
@@ -123,10 +125,9 @@ def list_messages(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # --------------------------------------------------
-    # Verify conversation ownership
-    # --------------------------------------------------
+    """Return all messages belonging to a user's conversation."""
 
+    # Verify conversation ownership.
     conversation = db.scalar(
         select(Conversation).where(
             Conversation.id == conversation_id,
@@ -140,15 +141,10 @@ def list_messages(
             detail="Conversation not found.",
         )
 
-    # --------------------------------------------------
-    # Load conversation messages
-    # --------------------------------------------------
-
+    # Fetch conversation messages in chronological order.
     messages = db.scalars(
         select(Message)
-        .where(
-            Message.conversation_id == conversation_id
-        )
+        .where(Message.conversation_id == conversation_id)
         .order_by(Message.created_at.asc())
     ).all()
 
