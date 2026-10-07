@@ -1,9 +1,15 @@
 import { useState } from "react";
 import "./App.css";
 
+import ChatSidebar from "./components/ChatSidebar";
+import Login from "./components/Login";
+
 const API_URL = "http://127.0.0.1:8000";
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    Boolean(localStorage.getItem("access_token"))
+  );
   const [message, setMessage] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,6 +33,7 @@ function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
         body: JSON.stringify({
           message: userMessage,
@@ -108,87 +115,112 @@ function App() {
     setError("");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <Login
+        onLogin={() => setIsAuthenticated(true)}
+      />
+    );
+  }
   return (
-    <div className="app">
-      <header className="header">
-        <h1>AI Research Assistant</h1>
-        <p>Research smarter with AI-powered tools</p>
-      </header>
+    <div className="app-layout">
+      <ChatSidebar
+        onNewChat={() => {
+          setMessage("");
+          setResponse("");
+          setError("");
+        }}
+        onLogout={handleLogout}
+      />
 
-      <main className="main-content">
-        <section className="hero">
-          <h2>What would you like to research?</h2>
-          <p>
-            Ask a question, search the web, or use our AI-powered tools.
-          </p>
-        </section>
+      <div className="chat-main">
+        <div className="app">
+          <header className="header">
+            <h1>AI Research Assistant</h1>
+            <p>Research smarter with AI-powered tools</p>
+          </header>
 
-        <form className="chat-form" onSubmit={handleSubmit}>
-          <textarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder="Ask anything..."
-            rows="4"
-            disabled={loading}
-          />
+          <main className="main-content">
+            <section className="hero">
+              <h2>What would you like to research?</h2>
+              <p>
+                Ask a question, search the web, or use our AI-powered tools.
+              </p>
+            </section>
 
-          <button
-            type="submit"
-            disabled={loading || !message.trim()}
-          >
-            {loading ? "Researching..." : "Send"}
-          </button>
-        </form>
+            <form className="chat-form" onSubmit={handleSubmit}>
+              <textarea
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder="Ask anything..."
+                rows="4"
+                disabled={loading}
+              />
 
-        {error && (
-          <section className="error-message">
-            <strong>Error:</strong> {error}
-          </section>
-        )}
+              <button
+                type="submit"
+                disabled={loading || !message.trim()}
+              >
+                {loading ? "Researching..." : "Send"}
+              </button>
+            </form>
 
-        {response && (
-          <section className="response-section">
-            <h3>Research Assistant</h3>
+            {error && (
+              <section className="error-message">
+                <strong>Error:</strong> {error}
+              </section>
+            )}
 
-            <div className="response-box">
-              {response}
-            </div>
-          </section>
-        )}
+            {response && (
+              <section className="response-section">
+                <h3>Research Assistant</h3>
 
-        <section className="examples">
-          <h3>Try an example</h3>
+                <div className="response-box">
+                  {response}
+                </div>
+              </section>
+            )}
 
-          <div className="example-list">
-            <button
-              type="button"
-              onClick={() =>
-                handleExampleClick("Research the latest AI trends")
-              }
-            >
-              Research the latest AI trends
-            </button>
+            <section className="examples">
+              <h3>Try an example</h3>
 
-            <button
-              type="button"
-              onClick={() =>
-                handleExampleClick("Calculate GST on ₹50,000 at 18%")
-              }
-            >
-              Calculate GST on ₹50,000 at 18%
-            </button>
+              <div className="example-list">
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleExampleClick("Research the latest AI trends")
+                  }
+                >
+                  Research the latest AI trends
+                </button>
 
-            <button
-              type="button"
-              onClick={() =>
-                handleExampleClick("Find information about Python")
-              }
-            >
-              Find information about Python
-            </button>
-          </div>
-        </section>
-      </main>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleExampleClick("Calculate GST on ₹50,000 at 18%")
+                  }
+                >
+                  Calculate GST on ₹50,000 at 18%
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleExampleClick("Find information about Python")
+                  }
+                >
+                  Find information about Python
+                </button>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
