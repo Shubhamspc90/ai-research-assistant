@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 
 const API_URL = "http://127.0.0.1:8000";
 
-function ChatSidebar({ onNewChat, onLogout }) {
+function ChatSidebar({
+    onNewChat,
+    onConversationSelect,
+    onLogout, refreshKey,
+}) {
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -41,7 +45,7 @@ function ChatSidebar({ onNewChat, onLogout }) {
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [refreshKey]);
 
     return (
         <aside className="chat-sidebar">
@@ -94,6 +98,8 @@ function ChatSidebar({ onNewChat, onLogout }) {
                             key={conversation.id}
                             type="button"
                             className="conversation-item"
+                            onClick={() => onConversationSelect(conversation.id)}
+
                         >
                             <span className="conversation-title">
                                 {conversation.title}
