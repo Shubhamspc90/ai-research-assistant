@@ -12,6 +12,22 @@ from backend.app.schemas.chat import ChatRequest
 from backend.app.schemas.message import MessageResponse
 
 
+def generate_conversation_title(message: str) -> str:
+    """Create a concise title from the first user message."""
+
+    normalized_message = " ".join(message.split())
+
+    if not normalized_message:
+        return "New Conversation"
+
+    words = normalized_message.split()
+    title = " ".join(words[:8])
+
+    if len(words) > 8:
+        title += "..."
+
+    return title[:255]
+
 router = APIRouter(
     prefix="/conversations",
     tags=["Messages"],
@@ -43,6 +59,12 @@ def create_message(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found.",
+        )
+
+    # Generate a meaningful title for a new conversation.
+    if conversation.title.strip().lower() == "new conversation":
+        conversation.title = generate_conversation_title(
+            request.message
         )
 
     # Save the user's message.
