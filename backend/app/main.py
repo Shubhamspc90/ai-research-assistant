@@ -12,6 +12,7 @@ from backend.app.routes.conversations import router as conversations_router
 from backend.app.routes.messages import router as messages_router
 from backend.app.schemas.chat import ChatRequest, ChatResponse
 from backend.app.routes.analytics import router as analytics_router
+from backend.app.core.monitoring import RequestMonitoringMiddleware
 
 app = FastAPI(
     title="AI Research Assistant API",
@@ -23,6 +24,7 @@ app.include_router(auth_router)
 app.include_router(conversations_router)
 app.include_router(messages_router)
 app.include_router(analytics_router)
+app.add_middleware(RequestMonitoringMiddleware)
 
 # --------------------------------------------------
 # CORS Configuration
