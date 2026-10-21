@@ -1,3 +1,4 @@
+﻿import logging
 import json
 
 from fastapi import Depends, FastAPI
@@ -13,6 +14,7 @@ from backend.app.routes.messages import router as messages_router
 from backend.app.schemas.chat import ChatRequest, ChatResponse
 from backend.app.routes.analytics import router as analytics_router
 from backend.app.core.monitoring import RequestMonitoringMiddleware
+from backend.app.core.errors import register_exception_handlers
 
 app = FastAPI(
     title="AI Research Assistant API",
@@ -25,6 +27,9 @@ app.include_router(conversations_router)
 app.include_router(messages_router)
 app.include_router(analytics_router)
 app.add_middleware(RequestMonitoringMiddleware)
+logger = logging.getLogger("backend.api")
+
+register_exception_handlers(app)
 
 # --------------------------------------------------
 # CORS Configuration
@@ -120,10 +125,15 @@ async def chat_stream(
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
-        except Exception as exc:
+        except Exception:
+            logger.exception("Streaming chat generation failed")
+
             error_data = {
                 "type": "error",
-                "message": str(exc),
+                "message": (
+                    "The AI service is temporarily unavailable. "
+                    "Please try again later."
+                ),
             }
 
             yield f"data: {json.dumps(error_data)}\n\n"
