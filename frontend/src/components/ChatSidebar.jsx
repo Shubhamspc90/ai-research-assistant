@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 
 const API_URL = "http://127.0.0.1:8000";
@@ -5,46 +6,59 @@ const API_URL = "http://127.0.0.1:8000";
 function ChatSidebar({
     onNewChat,
     onConversationSelect,
-    onLogout, refreshKey,
+    onLogout,
+    refreshKey,
 }) {
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const fetchConversations = async () => {
-        setLoading(true);
-        setError("");
+    useEffect(() => {
+        let cancelled = false;
 
-        try {
-            const token = localStorage.getItem("access_token");
+        const token = localStorage.getItem("access_token");
 
-            if (!token) {
-                throw new Error("Please log in to view your conversations.");
-            }
+        const request = token
+            ? fetch(`${API_URL}/conversations`, {
+                  headers: {
+                      Authorization: `Bearer ${token}`,
+                  },
+              }).then(async (response) => {
+                  if (!response.ok) {
+                      throw new Error("Failed to load conversations.");
+                  }
 
-            const response = await fetch(`${API_URL}/conversations`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                  return response.json();
+              })
+            : Promise.reject(
+                  new Error("Please log in to view your conversations.")
+              );
+
+        request
+            .then((data) => {
+                if (!cancelled) {
+                    setConversations(data);
+                    setError("");
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "Unable to load conversations."
+                    );
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setLoading(false);
+                }
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to load conversations.");
-            }
-
-            const data = await response.json();
-            setConversations(data);
-        } catch (err) {
-            setError(
-                err.message || "Unable to load conversations."
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchConversations();
+        return () => {
+            cancelled = true;
+        };
     }, [refreshKey]);
 
     return (
@@ -59,6 +73,7 @@ function ChatSidebar({
                 >
                     + New Chat
                 </button>
+
                 <button
                     type="button"
                     className="logout-button"
@@ -66,10 +81,7 @@ function ChatSidebar({
                 >
                     Logout
                 </button>
-
-
             </div>
-
 
             <div className="conversation-list">
                 <h3>Recent Conversations</h3>
@@ -81,7 +93,7 @@ function ChatSidebar({
                 )}
 
                 {error && (
-                    <p className="sidebar-error">
+                    <p className="sidebar-error" role="alert">
                         {error}
                     </p>
                 )}
@@ -98,8 +110,9 @@ function ChatSidebar({
                             key={conversation.id}
                             type="button"
                             className="conversation-item"
-                            onClick={() => onConversationSelect(conversation.id)}
-
+                            onClick={() =>
+                                onConversationSelect(conversation.id)
+                            }
                         >
                             <span className="conversation-title">
                                 {conversation.title}
