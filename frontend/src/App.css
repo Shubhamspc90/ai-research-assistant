@@ -968,6 +968,8 @@ body,
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
 /* Keep the section heading visible while conversations scroll */
